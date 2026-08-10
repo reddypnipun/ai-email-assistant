@@ -5,7 +5,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 from app.config import get_all_secrets
 
-GEMINI_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET = get_all_secrets()
+GEMINI_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,MONGODB_URI = get_all_secrets()
 
 # 1. Define the complete extraction schema
 class EmailAnalysis(BaseModel):

@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from app.config import get_all_secrets
-GEMINI_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET = get_all_secrets()
+GEMINI_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,MONGODB_URI = get_all_secrets()
 
 # --- EMAIL TEXT CLEANERS ---
 

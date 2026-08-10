@@ -9,12 +9,12 @@ venv/
 env/
 .venv/
 
-# 3. Python Cache (Prevents clutter)
+# 3. Python Cache
 __pycache__/
 *.py[cod]
 *$py.class
 
-# 4. Machine Learning & Data
+# 4. Machine Learning & Database
 *.joblib
 *.sqlite3
 
