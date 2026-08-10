@@ -192,6 +192,108 @@
         };
 
             if (!token) {
+                // --- NEW: REAL LOGIN & SIGNUP STATES ---
+            const [email, setEmail] = useState("");
+            const [password, setPassword] = useState("");
+            const [isLoginView, setIsLoginView] = useState(true); // Toggles between Login and Signup
+            const [authLoading, setAuthLoading] = useState(false);
+
+            // --- NEW: SECURE AUTHENTICATION FUNCTION ---
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setAuthLoading(true);
+                
+                try {
+                    if (isLoginView) {
+                        // 1. LOGIN FLOW (FastAPI OAuth2 expects Form Data)
+                        const formData = new URLSearchParams();
+                        formData.append("username", email); 
+                        formData.append("password", password);
+
+                        const response = await fetch(`${API_URL}/login`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                            body: formData
+                        });
+                        const data = await response.json();
+
+                        if (response.ok && data.access_token) {
+                            setToken(data.access_token);
+                            localStorage.setItem("jwt", data.access_token);
+                        } else {
+                            alert(data.detail || "Invalid email or password.");
+                        }
+                    } else {
+                        // 2. SIGNUP FLOW (FastAPI expects JSON)
+                        const response = await fetch(`${API_URL}/signup`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: email, password: password })
+                        });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            alert("Account created successfully! You can now log in.");
+                            setIsLoginView(true); // Switch back to login screen
+                            setPassword(""); // Clear password for safety
+                        } else {
+                            alert(data.detail || "Failed to create account.");
+                        }
+                    }
+                } catch (err) {
+                    console.error("Auth Error:", err);
+                    alert("Could not connect to the server.");
+                }
+                setAuthLoading(false);
+            };
+
+            if (!token) {
+                return (
+                    <div className="container" style={{ maxWidth: '400px', marginTop: '100px' }}>
+                        <div className="card">
+                            <h2 style={{ textAlign: 'center' }}>{isLoginView ? "Sign In" : "Create Account"}</h2>
+                            
+                            <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Email Address</label>
+                                    <input 
+                                        type="email" 
+                                        className="login-input"
+                                        value={email} 
+                                        onChange={(e) => setEmail(e.target.value)} 
+                                        placeholder="you@example.com"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Password</label>
+                                    <input 
+                                        type="password" 
+                                        className="login-input"
+                                        value={password} 
+                                        onChange={(e) => setPassword(e.target.value)} 
+                                        placeholder="••••••••"
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="btn-primary" disabled={authLoading} style={{ marginTop: '10px' }}>
+                                    {authLoading ? "Please wait..." : (isLoginView ? "Login" : "Sign Up")}
+                                </button>
+                            </form>
+
+                            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.9rem' }}>
+                                {isLoginView ? "Don't have an account? " : "Already have an account? "}
+                                <button 
+                                    onClick={() => setIsLoginView(!isLoginView)} 
+                                    style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                    {isLoginView ? "Sign up here" : "Log in here"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
                 return (
                     <div className="container" style={{ maxWidth: '600px', marginTop: '100px' }}>
                         <div className="card">
