@@ -158,7 +158,8 @@
                 try {
                     alert("Generating calendar event... this takes a second!");
                     const response = await fetch(`${API_URL}/emails/${gmail_id}/calendar`, {
-                        method: "POST"
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${token}` }
                     });
                     const data = await response.json();
 
