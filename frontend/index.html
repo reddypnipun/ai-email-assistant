@@ -179,7 +179,6 @@
                 setSpam(prev => prev.filter(e => e.gmail_id !== gmail_id));
                 const response = await fetch(`${API_URL}/emails/${gmail_id}/not-spam`, {
                     method: "PUT",
-                    // NEW: Added the authorization header!
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 const data = await response.json();
