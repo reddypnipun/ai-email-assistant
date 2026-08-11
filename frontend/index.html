@@ -1,16 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Dashboard</title>
+
+    <!-- React & Babel CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        
+        .btn-primary { background-color: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-primary:hover:not(:disabled) { background-color: #1d4ed8; }
+        .btn-primary:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        
+        .btn-danger { background-color: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-danger:hover { background-color: #dc2626; }
+        
+        input[type="text"], input[type="email"], input[type="password"], input[type="date"] { padding: 10px; border-radius: 4px; border: 1px solid #d1d5db; box-sizing: border-box; font-family: monospace; }
+        .login-input { width: 100%; margin-top: 10px; font-family: inherit; }
+        
+        .dashboard { display: flex; gap: 20px; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .inbox-card { border-left: 4px solid #10b981; }
+        .spam-card { border-left: 4px solid #ef4444; opacity: 0.8; }
+        
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; }
+        .priority { font-weight: bold; color: #ef4444; }
+        .category { background: #e5e7eb; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+        .sender { color: #6b7280; font-size: 0.9rem; margin-bottom: 15px; }
+        .summary { background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 0.95rem; border: 1px solid #e5e7eb; }
+        .error { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-weight: 500; }
+        
+        .action-tasks { margin-top: 15px; font-size: 0.9rem; }
+        .suggested-reply { margin-top: 15px; padding: 15px; background-color: #e0e7ff; border-left: 4px solid #4f46e5; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <h3 style="color: #666; text-align: center; margin-top: 50px;">Loading AI Dashboard...</h3>
+    </div>
+
     <script type="text/babel">
         const { useState, useEffect } = React;
-
-        // --- NEW: BASE URL VARIABLE ---
         const API_URL = "https://ai-email-assistant-backend-qkm3.onrender.com";
 
         function App() {
+            // FIXED: All useState hooks MUST be at the very top level of the component!
             const [token, setToken] = useState(localStorage.getItem("jwt") || "");
             
+            // Auth States
+            const [email, setEmail] = useState("");
+            const [password, setPassword] = useState("");
+            const [isLoginView, setIsLoginView] = useState(true);
+            const [authLoading, setAuthLoading] = useState(false);
+            
+            // Dashboard States
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const [date, setDate] = useState(yesterday.toISOString().split('T')[0]);
-
             const [inbox, setInbox] = useState([]);
             const [spam, setSpam] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -18,7 +73,6 @@
 
             const loadSavedEmails = async () => {
                 try {
-                    // UPDATED
                     const response = await fetch(`${API_URL}/emails`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     });
@@ -39,14 +93,11 @@
             const syncEmails = async () => {
                 setLoading(true);
                 setError("");
-                
                 setInbox([]);
                 setSpam([]);
 
                 try {
                     const formattedDate = date.replace(/-/g, "/"); 
-                    
-                    // UPDATED
                     const response = await fetch(`${API_URL}/sync-emails?date=${formattedDate}`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     });
@@ -66,13 +117,11 @@
                         
                         buffer += decoder.decode(value, { stream: true });
                         const lines = buffer.split('\n');
-                        
                         buffer = lines.pop(); 
                         
                         for (const line of lines) {
                             if (line.trim()) {
                                 const email = JSON.parse(line);
-                                
                                 if (email.status === 'spam') {
                                     setSpam(prev => {
                                         if (prev.some(e => e.gmail_id === email.gmail_id)) return prev;
@@ -104,7 +153,6 @@
             const handleAddToCalendar = async (gmail_id) => {
                 try {
                     alert("Generating calendar event... this takes a second!");
-                    // UPDATED
                     const response = await fetch(`${API_URL}/emails/${gmail_id}/calendar`, {
                         method: "POST"
                     });
@@ -124,8 +172,6 @@
             const handleNotSpam = async (gmail_id) => {
                 try {
                     setSpam(prev => prev.filter(e => e.gmail_id !== gmail_id));
-
-                    // UPDATED
                     const response = await fetch(`${API_URL}/emails/${gmail_id}/not-spam`, {
                         method: "PUT"
                     });
@@ -139,21 +185,12 @@
                 }
             };
 
-            if (!token) {
-                // --- NEW: REAL LOGIN & SIGNUP STATES ---
-            const [email, setEmail] = useState("");
-            const [password, setPassword] = useState("");
-            const [isLoginView, setIsLoginView] = useState(true); // Toggles between Login and Signup
-            const [authLoading, setAuthLoading] = useState(false);
-
-            // --- NEW: SECURE AUTHENTICATION FUNCTION ---
             const handleAuth = async (e) => {
                 e.preventDefault();
                 setAuthLoading(true);
                 
                 try {
                     if (isLoginView) {
-                        // 1. LOGIN FLOW (FastAPI OAuth2 expects Form Data)
                         const formData = new URLSearchParams();
                         formData.append("username", email); 
                         formData.append("password", password);
@@ -172,7 +209,6 @@
                             alert(data.detail || "Invalid email or password.");
                         }
                     } else {
-                        // 2. SIGNUP FLOW (FastAPI expects JSON)
                         const response = await fetch(`${API_URL}/signup`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -182,8 +218,8 @@
 
                         if (response.ok) {
                             alert("Account created successfully! You can now log in.");
-                            setIsLoginView(true); // Switch back to login screen
-                            setPassword(""); // Clear password for safety
+                            setIsLoginView(true);
+                            setPassword(""); 
                         } else {
                             alert(data.detail || "Failed to create account.");
                         }
@@ -195,6 +231,7 @@
                 setAuthLoading(false);
             };
 
+            // IF NOT LOGGED IN, SHOW LOGIN SCREEN
             if (!token) {
                 return (
                     <div className="container" style={{ maxWidth: '400px', marginTop: '100px' }}>
@@ -242,26 +279,8 @@
                     </div>
                 );
             }
-                return (
-                    <div className="container" style={{ maxWidth: '600px', marginTop: '100px' }}>
-                        <div className="card">
-                            <h2>Welcome to AI Email Assistant</h2>
-                            <p>Please enter your JWT Token from your FastAPI backend to connect:</p>
-                            <input 
-                                type="text" 
-                                className="login-input"
-                                value={token} 
-                                onChange={(e) => {
-                                    setToken(e.target.value);
-                                    localStorage.setItem("jwt", e.target.value);
-                                }} 
-                                placeholder="Paste token here..."
-                            />
-                        </div>
-                    </div>
-                );
-            }
 
+            // IF LOGGED IN, SHOW MAIN DASHBOARD
             return (
                 <div className="container">
                     <header>
@@ -285,7 +304,6 @@
                     {error && <div className="error">{error}</div>}
 
                     <div className="dashboard">
-                        {/* LEFT COLUMN: INBOX */}
                         <div className="column">
                             <h2>Inbox ({inbox.length})</h2>
                             {inbox.map((email, idx) => {
@@ -329,13 +347,11 @@
                                                 </button>
                                             </div>
                                         )}
-
                                     </div>
                                 );
                             })}
                         </div>
 
-                        {/* RIGHT COLUMN: SPAM */}
                         <div className="column">
                             <h2>Blocked by ML ({spam.length})</h2>
                             {spam.map((email, idx) => (
@@ -351,7 +367,6 @@
                                             ✅ Mark Not Spam
                                         </button>
                                     </div>
-
                                 </div>
                             ))}
                         </div>
@@ -363,3 +378,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+</body>
+</html>
