@@ -55,7 +55,6 @@
         function App() {
             const [token, setToken] = useState(localStorage.getItem("jwt") || "");
             
-            // Dashboard States
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const [date, setDate] = useState(yesterday.toISOString().split('T')[0]);
@@ -64,7 +63,6 @@
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState("");
 
-            // NEW: Listen for the token coming back from Google in the URL URL
             useEffect(() => {
                 const params = new URLSearchParams(window.location.search);
                 const urlToken = params.get("token");
@@ -72,7 +70,6 @@
                 if (urlToken) {
                     setToken(urlToken);
                     localStorage.setItem("jwt", urlToken);
-                    // Hide the token from the address bar for a clean look
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else if (token) {
                     loadSavedEmails();
@@ -195,7 +192,6 @@
                 window.location.href = `${API_URL}/auth/google/login`;
             };
 
-            // IF NOT LOGGED IN, SHOW GOOGLE LOGIN SCREEN
             if (!token) {
                 return (
                     <div className="container" style={{ maxWidth: '400px', margin: '100px auto' }}>
@@ -215,7 +211,6 @@
                 );
             }
 
-            // IF LOGGED IN, SHOW MAIN DASHBOARD
             return (
                 <div className="container">
                     <header>

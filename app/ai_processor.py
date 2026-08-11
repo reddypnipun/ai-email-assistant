@@ -7,23 +7,18 @@ from google.genai import types
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# 1. Find the root directory path (one level up from app/)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 
-# 2. Load .env explicitly using its exact path
 load_dotenv(dotenv_path=ENV_PATH)
 
-# 3. Retrieve the key
 api_key = os.getenv("GEMINI_API_KEY")
 
-# Debug check in console
 if not api_key:
     print(f"❌ ERROR: Could not find GEMINI_API_KEY inside {ENV_PATH}")
 else:
     print("✅ GEMINI_API_KEY loaded successfully from .env!")
 
-# Initialize Gemini Client
 client = genai.Client(api_key=api_key) 
 
 class CalendarEvent(BaseModel):

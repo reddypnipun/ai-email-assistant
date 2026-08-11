@@ -7,7 +7,6 @@ from app.config import get_all_secrets
 
 GEMINI_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,MONGODB_URI = get_all_secrets()
 
-# 1. Define the complete extraction schema
 class EmailAnalysis(BaseModel):
     tags: list[str] = Field(description="1 to 4 relevant tags (e.g. 'classroom', 'assignment', 'meeting')")
     is_urgent: bool = Field(description="True if the email requires immediate action or has a looming deadline")

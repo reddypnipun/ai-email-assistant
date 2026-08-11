@@ -68,7 +68,6 @@ async def google_callback(request: Request, code: str, state: str):
         user_info = json.loads(response.read().decode())
         user_email = user_info.get("email")
 
-    # Save user & refresh token to MongoDB
     user = await user_collection.find_one({"email": user_email})
     if not user:
         await user_collection.insert_one({
@@ -79,7 +78,6 @@ async def google_callback(request: Request, code: str, state: str):
 
     access_token = create_access_token(data={"sub": user_email})
     
-    # Pull frontend URL from Render settings, fallback to localhost if missing
     FRONTEND_URL = os.getenv("FRONTEND_URL", "https://nipun-ai-email-assistant.netlify.app")
     return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
 
@@ -111,7 +109,7 @@ async def sync_emails(date: str, current_user: dict = Depends(get_current_user))
             
             if is_spam:
                 spam_doc = {
-                    "user_email": current_user["email"], # Links email to THIS user
+                    "user_email": current_user["email"],
                     "gmail_id": email["id"],
                     "sender": email["sender"],
                     "subject": email["subject"],
@@ -144,7 +142,7 @@ async def sync_emails(date: str, current_user: dict = Depends(get_current_user))
                 
                 if success:
                     good_doc = {
-                        "user_email": current_user["email"], # Links email to THIS user
+                        "user_email": current_user["email"],
                         "gmail_id": email["id"],
                         "sender": email["sender"],
                         "subject": email["subject"],
@@ -166,7 +164,6 @@ async def sync_emails(date: str, current_user: dict = Depends(get_current_user))
 
 @app.get("/emails")
 async def get_saved_emails(current_user: dict = Depends(get_current_user)):
-    # NEW: Pull ONLY the emails belonging to the currently logged in user!
     cursor = email_collection.find({"user_email": current_user["email"]}, {"_id": 0})
     emails = await cursor.to_list(length=100)
     return {"emails": emails}
