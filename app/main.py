@@ -80,7 +80,7 @@ async def google_callback(request: Request, code: str, state: str):
     access_token = create_access_token(data={"sub": user_email})
     
     # Pull frontend URL from Render settings, fallback to localhost if missing
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://nipun-ai-email-assistant.netlify.app")
     return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
 
 
