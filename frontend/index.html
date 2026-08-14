@@ -54,7 +54,9 @@
 
         function App() {
             const [token, setToken] = useState(localStorage.getItem("jwt") || "");
-            
+            useEffect(() => {
+                    fetch(`${API_URL}/`).catch(() => {});
+            }, []);
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const [date, setDate] = useState(yesterday.toISOString().split('T')[0]);
