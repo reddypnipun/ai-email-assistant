@@ -157,7 +157,7 @@ async def sync_emails(date: str, current_user: dict = Depends(get_current_user))
                         {"$set": good_doc}, upsert=True
                     )
                     yield json.dumps(good_doc) + "\n"
-                    await asyncio.sleep(4)
+                    await asyncio.sleep(2.1)
 
     return StreamingResponse(process_emails_one_by_one(), media_type="application/x-ndjson")
 
