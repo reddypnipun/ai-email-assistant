@@ -8,7 +8,7 @@ def analyze_email(email_text, subject, sender):
     prompt = f"Analyze this email.\n\nFrom: {sender}\nSubject: {subject}\nBody: {email_text}"
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-20b",
         messages=[
             {
                 "role": "system", 
