@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Dashboard</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com;">
+    <!-- React & Babel CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        
+        .btn-primary { background-color: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-primary:hover:not(:disabled) { background-color: #1d4ed8; }
+        .btn-primary:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        
+        .btn-danger { background-color: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-danger:hover { background-color: #dc2626; }
+        
+        input[type="text"], input[type="email"], input[type="password"], input[type="date"] { padding: 10px; border-radius: 4px; border: 1px solid #d1d5db; box-sizing: border-box; font-family: monospace; }
+        .login-input { width: 100%; margin-top: 10px; font-family: inherit; }
+        
+        .dashboard { display: flex; gap: 20px; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .inbox-card { border-left: 4px solid #10b981; }
+        .spam-card { border-left: 4px solid #ef4444; opacity: 0.8; }
+        
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; }
+        .priority { font-weight: bold; color: #ef4444; }
+        .category { background: #e5e7eb; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+        .sender { color: #6b7280; font-size: 0.9rem; margin-bottom: 15px; }
+        .summary { background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 0.95rem; border: 1px solid #e5e7eb; }
+        .error { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-weight: 500; }
+        
+        .action-tasks { margin-top: 15px; font-size: 0.9rem; }
+        .suggested-reply { margin-top: 15px; padding: 15px; background-color: #e0e7ff; border-left: 4px solid #4f46e5; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <h3 style="color: #666; text-align: center; margin-top: 50px;">Loading AI Dashboard...</h3>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const API_URL = "https://ai-email-assistant-backend-qkm3.onrender.com";
+
+        function App() {
+            const [token, setToken] = useState(localStorage.getItem("jwt") || "");
+            useEffect(() => {
+                    fetch(`${API_URL}/`).catch(() => {});
+            }, []);
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const [date, setDate] = useState(yesterday.toISOString().split('T')[0]);
+            const [inbox, setInbox] = useState([]);
+            const [spam, setSpam] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState("");
+
+            useEffect(() => {
+                const params = new URLSearchParams(window.location.search);
+                const urlToken = params.get("token");
+                
+                if (urlToken) {
+                    setToken(urlToken);
+                    localStorage.setItem("jwt", urlToken);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } else if (token) {
+                    loadSavedEmails();
+                }
+            }, [token]);
+
+            const loadSavedEmails = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/emails`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.emails) {
+                        setInbox(data.emails.filter(e => e.status !== 'spam'));
+                        setSpam(data.emails.filter(e => e.status === 'spam'));
+                    }
+                } catch (err) {
+                    console.error("Failed to load saved emails", err);
+                }
+            };
+
+            const syncEmails = async () => {
+                setLoading(true);
+                setError("");
+                setInbox([]);
+                setSpam([]);
+
+                try {
+                    const formattedDate = date.replace(/-/g, "/"); 
+                    const response = await fetch(`${API_URL}/sync-emails?date=${formattedDate}`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        throw new Error(errData.error || "Failed to start streaming");
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = "";
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); 
+                        
+                        for (const line of lines) {
+                            if (line.trim()) {
+                                const email = JSON.parse(line);
+                                if (email.status === 'spam') {
+                                    setSpam(prev => {
+                                        if (prev.some(e => e.gmail_id === email.gmail_id)) return prev;
+                                        return [email, ...prev];
+                                    });
+                                } else {
+                                    setInbox(prev => {
+                                        if (prev.some(e => e.gmail_id === email.gmail_id)) return prev;
+                                        return [email, ...prev];
+                                    });
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    setError("Network error fetching emails. Ensure backend is running and token is valid.");
+                    console.error(err);
+                }
+                setLoading(false);
+            };
+
+            const handleLogout = () => {
+                setToken("");
+                setInbox([]);
+                setSpam([]);
+                localStorage.removeItem("jwt");
+            };
+
+            const handleAddToCalendar = async (gmail_id) => {
+                try {
+                    alert("Generating calendar event... this takes a second!");
+                    const response = await fetch(`${API_URL}/emails/${gmail_id}/calendar`, {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    const data = await response.json();
+
+                    if (data.calendar_url) {
+                        window.open(data.calendar_url, '_blank');
+                    } else {
+                        alert(data.detail || "Could not generate calendar link.");
+                    }
+                } catch (error) {
+                    console.error("Calendar Error:", error);
+                    alert("Failed to create calendar event.");
+                }
+            };
+
+            const handleNotSpam = async (gmail_id) => {
+            try {
+                setSpam(prev => prev.filter(e => e.gmail_id !== gmail_id));
+                const response = await fetch(`${API_URL}/emails/${gmail_id}/not-spam`, {
+                    method: "PUT",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.data) {
+                    setInbox(prev => [data.data, ...prev]);
+                }
+            } catch (error) {
+                console.error("Spam Rescue Error:", error);
+            }
+        };
+
+            const handleGoogleLogin = () => {
+                window.location.href = `${API_URL}/auth/google/login`;
+            };
+
+            if (!token) {
+                return (
+                    <div className="container" style={{ maxWidth: '400px', margin: '100px auto' }}>
+                        <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                            <h2 style={{ marginBottom: '10px', color: '#1f2937' }}>AI Email Assistant</h2>
+                            <p style={{ color: '#6b7280', marginBottom: '30px' }}>Connect your Gmail to begin</p>
+                            
+                            <button 
+                                onClick={handleGoogleLogin} 
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', width: '100%', padding: '12px', backgroundColor: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                            >
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" style={{ width: '22px' }}/>
+                                Continue with Google
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="container">
+                    <header>
+                        <h1>⚡ AI Email Dashboard</h1>
+                        <div className="header-controls">
+                            <label style={{ fontWeight: 'bold' }}>Fetch After:</label>
+                            <input 
+                                type="date" 
+                                value={date} 
+                                onChange={(e) => setDate(e.target.value)} 
+                            />
+                            <button className="btn-primary" onClick={syncEmails} disabled={loading}>
+                                {loading ? "Streaming AI Data..." : "Fetch & Analyze"}
+                            </button>
+                            <button className="btn-danger" onClick={handleLogout}>
+                                Logout
+                            </button>
+                        </div>
+                    </header>
+
+                    {error && <div className="error">{error}</div>}
+
+                    <div className="dashboard">
+                        <div className="column">
+                            <h2>Inbox ({inbox.length})</h2>
+                            {inbox.map((email, idx) => {
+                                const ai = email.ai_analysis || {};
+                                return (
+                                    <div key={idx} className="card inbox-card">
+                                        <div className="card-header">
+                                            <span className="priority">Priority: {ai.priority_score || ai.urgency_score || 1}/10</span>
+                                            <span className="category">{email.category || ai.category || "Uncategorized"}</span>
+                                        </div>
+                                        <h3 style={{ margin: '10px 0' }}>{email.subject}</h3>
+                                        <p className="sender">From: {email.sender}</p>
+                                        
+                                        {ai.summary && <p className="summary"><strong>AI Summary:</strong> {ai.summary}</p>}
+                                        
+                                        {ai.action_items && ai.action_items.length > 0 && (
+                                            <div className="action-tasks">
+                                                <strong>Tasks:</strong>
+                                                <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                                                    {ai.action_items.map((item, i) => <li key={i}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        
+                                        {ai.suggested_reply && (
+                                            <div className="suggested-reply">
+                                                <strong style={{ display: 'block', fontSize: '0.8rem', color: '#4338ca', marginBottom: '8px' }}>
+                                                    ✨ AI Suggested Reply:
+                                                </strong>
+                                                <span style={{ fontSize: '0.95rem' }}>{ai.suggested_reply}</span>
+                                            </div>
+                                        )}
+
+                                        {ai.calendar_event && (
+                                            <div style={{ marginTop: '15px' }}>
+                                                <button
+                                                    onClick={() => handleAddToCalendar(email.gmail_id)}
+                                                    style={{ backgroundColor: '#2563eb', color: 'white', padding: '8px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}
+                                                >
+                                                    📅 Add to Calendar
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="column">
+                            <h2>Blocked by ML ({spam.length})</h2>
+                            {spam.map((email, idx) => (
+                                <div key={idx} className="card spam-card">
+                                    <h3 style={{ margin: '0 0 10px 0' }}>{email.subject}</h3>
+                                    <p className="sender">From: {email.sender}</p>
+                                    
+                                    <div style={{ marginTop: '15px' }}>
+                                        <button 
+                                            onClick={() => handleNotSpam(email.gmail_id)}
+                                            style={{ backgroundColor: '#10b981', color: 'white', padding: '8px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}
+                                        >
+                                            ✅ Mark Not Spam
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

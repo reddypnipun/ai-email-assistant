@@ -1,0 +1,25 @@
+# 1. Environment Variables & Secrets (CRITICAL)
+.env
+token.json
+credentials.json
+client_secrets.json
+
+# 2. Virtual Environments
+venv/
+env/
+.venv/
+
+# 3. Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 4. Machine Learning & Database
+*.joblib
+*.sqlite3
+
+# 5. OS & Editor System Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
