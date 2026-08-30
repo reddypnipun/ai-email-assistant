@@ -78,7 +78,7 @@ async def google_callback(request: Request, code: str, state: str):
 
     access_token = create_access_token(data={"sub": user_email})
     
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://nipun-ai-email-assistant.netlify.app")
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://ai-email-assistant-zeta-pearl.vercel.app")
     return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
 
 
