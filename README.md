@@ -6,7 +6,7 @@ A high-performance full-stack web application that integrates Google OAuth, the 
 
 This application solves inbox overload by securely connecting to a user's Gmail account and utilizing a 70-billion parameter LLM to process unread threads. Instead of standard batch processing, it leverages asynchronous Python and Server-Sent Events (SSE) to stream AI-analyzed email summaries to a React frontend instantly.
 
-**Live Demo:** [https://ai-email-assistant-brown.vercel.app/](https://ai-email-assistant-brown.vercel.app/)
+**Live Demo:** [https://ai-email-assistant.vercel.app/](https://ai-email-assistant-zeta-pearl.vercel.app/)
 
 ## Core Features
 
